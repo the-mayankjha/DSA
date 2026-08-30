@@ -86,7 +86,23 @@ class Solution {
                 // Water trapped at left
                 water += leftMax - height[left];
 
-                left++
+                left++;
+
+            } else {
+
+                // Update maximum height on the right
+                rightMax = Math.max(rightMax, height[right]);
+
+                // Water trapped at right
+                water += rightMax - height[right];
+
+                right--;
+            }
+        }
+
+        return water;
+    }
+}
 ```
 
 ## Complexity
@@ -100,52 +116,65 @@ _See AI Notes below for the implementation-specific analysis._
 
 ## Approach
 
-The solution implements the **Two Pointers** pattern to efficiently compute trapped rainwater without requiring extra space for prefix/suffix maximum arrays. By maintaining two pointers (`left` and `right`) at opposite ends of the `height` array alongside running maximums (`leftMax` and `rightMax`), we can determine the trapped water at any boundary immediately based on the height constraint of the opposing side.
+The solution uses an optimized **Two Pointer** pattern to compute the trapped rain water in $O(1)$ space. Instead of pre-computing the maximum heights for every index using extra arrays (Dynamic Programming), we maintain two pointers (`left` and `right`) starting at both ends of the `height` array, moving inward while keeping track of the running maximum heights (`leftMax` and `rightMax`).
 
 ## Key Idea / Invariant
 
 > [!NOTE]
-> The core invariant of this approach is that if `height[left] <= height[right]`, the water trapped at the `left` pointer is bounded solely by `leftMax`, because a taller or equal bar guaranteed at `right` ensures the water cannot spill out on the right side.
+> The water trapped at any index is determined by the *shorter* of the maximum walls enclosing it from the left and right. 
+
+By comparing `height[left]` and `height[right]`, the pointer pointing to the smaller bar is guaranteed to be bounded by the maximum height seen on its side—regardless of what towers lie beyond the opposing pointer. This allows us to process elements greedily without knowing the absolute maximum of the entire array.
 
 ## Code Explanation
 
-The execution proceeds through the following steps:
-
-1. **Initialization**: We declare two pointers, `left` starting at index `0` and `right` starting at the end of the array (`height.length - 1`). We also initialize `leftMax`, `rightMax`, and `water` to `0`.
-2. **Main Loop (`while (left < right)`)**: The loop iterates inward until the two pointers meet.
-3. **Comparison (`if (height[left] <= height[right])`)**: 
-   - We evaluate the side with the smaller height. Since `height[left]` is less than or equal to `height[right]`, `leftMax` dictates the water level.
-   - We update `leftMax` using `Math.max(leftMax, height[left])`.
-   - We calculate trapped water at the current `left` position as `leftMax - height[left]` and add it to `water`.
-   - We advance `left` to the right. *(Note: The provided code snippet is incomplete and cuts off right after `left++`)*.
-
-> [!CAUTION]
-> The provided solution code is incomplete and cuts off mid-execution (`left++`). It misses the `else` branch for processing the `right` pointer, the loop closure, and the return statement.
+- `left` and `right`: Pointers initialized to `0` and `height.length - 1` respectively, defining the current boundaries of our search space.
+- `leftMax` and `rightMax`: Running maximum heights encountered so far from the left and right boundaries.
+- `water`: Accumulator storing the total volume of trapped water.
+- `while (left < right)`: The main loop narrows the window from both sides until the pointers meet.
+- `if (height[left] <= height[right])`: Processes the left side when the left bar is shorter or equal, ensuring `leftMax` safely bounds the water calculation.
+  - `leftMax = Math.max(leftMax, height[left])`: Updates the highest bar seen on the left.
+  - `water += leftMax - height[left]`: Adds the water trapped on top of the current `left` bar.
+  - `left++`: Advances the left pointer inward.
+- `else`: Processes the right side symmetrically when the right bar is strictly shorter.
+  - `rightMax = Math.max(rightMax, height[right])`: Updates the highest bar seen on the right.
+  - `water += rightMax - height[right]`: Adds the water trapped on top of the current `right` bar.
+  - `right--`: Moves the right pointer inward.
 
 ## Dry Run
 
-Let's dry run the intended logic using `height = [0,1,0,2]`:
-- Initial state: `left = 0`, `right = 3`, `leftMax = 0`, `rightMax = 0`, `water = 0`.
-- Iteration 1: `height[0]` (`0`) `<= height[3]` (`2`). `leftMax = Math.max(0, 0) = 0`. `water += 0 - 0 = 0`. `left` becomes `1`.
-- Iteration 2: `height[1]` (`1`) `> height[3]` (`2`) is false? Wait, `height[1]` is `1` and `height[3]` is `2`, so `1 <= 2` is true: `leftMax = Math.max(0, 1) = 1`. `water += 1 - 1 = 0`. `left` becomes `2`.
-- Iteration 3: `height[2]` (`0`) `<= height[3]` (`2`). `leftMax = Math.max(1, 0) = 1`. `water += 1 - 0 = 1`. `left` becomes `3`.
-- Loop terminates when `left` equals `right`.
+Let's trace `height = [0, 1, 0, 2]`.
+
+1. Initial state: `left = 0`, `right = 3`, `leftMax = 0`, `rightMax = 0`, `water = 0`.
+2. Iteration 1: `height[0]` (0) `<= height[3]` (2) is true.
+   - `leftMax = max(0, 0) = 0`
+   - `water += 0 - 0 = 0`
+   - `left` becomes `1`.
+3. Iteration 2: `height[1]` (1) `<= height[3]` (2) is true.
+   - `leftMax = max(0, 1) = 1`
+   - `water += 1 - 1 = 0`
+   - `left` becomes `2`.
+4. Iteration 3: `height[2]` (0) `<= height[3]` (2) is true.
+   - `leftMax = max(1, 0) = 1`
+   - `water += 1 - 0 = 1` (Accumulated water = 1)
+   - `left` becomes `3`.
+5. Loop terminates because `left` (3) is no longer `< right` (3).
+6. Returns `water = 1`.
 
 ## Complexity Analysis
 
-- **Time Complexity**: $\mathcal{O}(N)$ where $N$ is the length of the `height` array, since each element is visited at most once by the two pointers.
-- **Space Complexity**: $\mathcal{O}(1)$ because only a constant amount of extra memory (`left`, `right`, `leftMax`, `rightMax`, `water`) is used.
+- **Time Complexity:** $\mathcal{O}(n)$, where $n$ is the length of `height`. Each element is visited at most once as the `left` and `right` pointers converge toward the center.
+- **Space Complexity:** $\mathcal{O}(1)$. Only a few primitive integer variables (`left`, `right`, `leftMax`, `rightMax`, `water`) are used, requiring constant extra space.
 
 ## Alternative Approach
 
-An alternative approach uses **Dynamic Processing** with two arrays (`leftMax` and `rightMax`) to precompute the maximum heights to the left and right of every index. While easier to conceptualize, it requires $\mathcal{O}(N)$ extra space. Alternatively, a **Monotonic Stack** can keep track of bars to compute trapped water horizontally layer by layer.
+An alternative approach uses **Dynamic Programming** with two auxiliary arrays, `leftMax` and `rightMax`, populated in forward and backward passes. While it achieves $\mathcal{O}(n)$ time, it requires $\mathcal{O}(n)$ space. The two-pointer solution shown here optimizes the space complexity down to $\mathcal{O}(1)$ by evaluating bounds on the fly.
 
 ## Important Takeaways
 
-- Two pointers work exceptionally well for trapping water problems because processing the smaller boundary eliminates uncertainty regarding the opposing side.
-- Always ensure all control flow blocks (like the `else` branch for the `right` pointer) and return statements are fully implemented in production code.
+> [!TIP]
+> Whenever an array problem requires comparing elements relative to left and right maximums, think about whether a two-pointer approach from both extremities can eliminate the need for prefix/suffix arrays.
 
 ## Final Summary
 
-This two-pointer solution optimizes space down to $\mathcal{O}(1)$ by converging from both ends of the array, dynamically resolving water capacity based on the limiting height of the currently processed side.
+This solution provides an optimal, interview-standard implementation for the Trapping Rain Water problem. By leveraging two converging pointers and dynamic boundary tracking, it computes the result in linear time with zero auxiliary memory overhead.
 

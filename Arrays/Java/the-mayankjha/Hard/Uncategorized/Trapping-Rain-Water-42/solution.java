@@ -19,4 +19,20 @@ class Solution {
                 // Water trapped at left
                 water += leftMax - height[left];
 
-                left++
+                left++;
+
+            } else {
+
+                // Update maximum height on the right
+                rightMax = Math.max(rightMax, height[right]);
+
+                // Water trapped at right
+                water += rightMax - height[right];
+
+                right--;
+            }
+        }
+
+        return water;
+    }
+}

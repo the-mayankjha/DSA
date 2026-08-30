@@ -18,59 +18,63 @@
 
 ## 🧠 Approach
 
-The solution employs **Backtracking** to explore the state space of queen placements row by row. Since each queen must occupy a unique row, we process the board from `row = 0` to `n-1`.
+The solution employs **Backtracking** to explore the state space of queen placements row by row. Since each queen must occupy a unique row and column, we process row `r` from `0` to `n-1`. For each row, we attempt to place a queen in every column `c` that is not under attack.
 
-1.  **Board Representation**: A `char[][] board` initialized with `'.'` tracks the current configuration.
-2.  **Constraint Tracking**: To achieve $O(1)$ validation for each placement, we use three boolean arrays:
+1.  **State Representation**: We maintain a 2D `char[][] board` initialized with `.` to track placements.
+2.  **Constraint Tracking**: To achieve $O(1)$ lookup for safety checks, we use three boolean arrays:
     *   `cols`: Tracks if a column is occupied.
-    *   `diag1`: Tracks "major" diagonals (top-left to bottom-right). Using the property `row - col + (n - 1)`, all cells on the same major diagonal map to the same index.
-    *   `diag2`: Tracks "minor" diagonals (top-right to bottom-left). Using the property `row + col`, all cells on the same minor diagonal map to the same index.
-3.  **Recursion**: The `backtrack` function attempts to place a queen in every column of the current `row`. If a placement is valid (checked via the boolean arrays), we mark the state, recurse to `row + 1`, and then **backtrack** by resetting the state.
+    *   `diag1`: Tracks "major" diagonals (top-left to bottom-right). Using the formula `row - col + n - 1` maps these to a unique index in the range `[0, 2n-2]`.
+    *   `diag2`: Tracks "minor" diagonals (top-right to bottom-left). Using the formula `row + col` maps these to a unique index in the range `[0, 2n-2]`.
+3.  **Recursion**: The `backtrack` method attempts to place a queen in `row`. If successful, it marks the constraints, recurses to `row + 1`, and then performs **backtracking** (resetting the board and boolean flags) to explore other configurations.
 
-## 🔍 Key Invariant: Diagonal Mapping
-The core of the efficiency lies in the coordinate transformation for diagonals:
-*   **Major Diagonals (`diag1`)**: Constant `row - col`. We add `n - 1` to ensure the index is non-negative, resulting in range `[0, 2n - 2]`.
-*   **Minor Diagonals (`diag2`)**: Constant `row + col`. The range is `[0, 2n - 2]`.
+## 🔍 Key Idea: Constraint Mapping
+The core efficiency comes from the mathematical transformation of diagonal coordinates into array indices:
+*   **Major Diagonals (`diag1`)**: Along any such diagonal, `row - col` is constant. Adding `n - 1` shifts this to a non-negative index.
+*   **Minor Diagonals (`diag2`)**: Along any such diagonal, `row + col` is constant.
 
 ## 🧪 Dry Run
 For `n = 4`:
-1.  `backtrack(0, ...)`: Try `cols[0]`. `board[0][0] = 'Q'`.
-2.  `backtrack(1, ...)`: Try `cols[0]` (blocked), `cols[1]` (blocked by diag), `cols[2]` (valid). `board[1][2] = 'Q'`.
-3.  Continue until `row == n`. When `row == n`, convert the `board` to a `List<String>` and add to `ans`.
-4.  Backtrack: Reset `board[row][col] = '.'` and set boolean flags back to `false`.
+1.  `backtrack(0)`: Try `col = 0`. Mark `cols[0]`, `diag1[0-0+3]`, `diag2[0+0]`.
+2.  `backtrack(1)`: Try `col = 2`. Check if `cols[2]`, `diag1[1-2+3]`, `diag2[1+2]` are free.
+3.  If a row has no valid columns, the function returns, effectively pruning that branch of the search tree.
+4.  When `row == n`, the current `board` state is converted to a `List<String>` and added to `ans`.
 
 ## ⏱️ Complexity Analysis
-*   **Time Complexity**: $O(N!)$. We have $N$ choices for the first row, $N-2$ for the second, and so on. While the diagonal constraints prune the tree, the upper bound remains factorial.
-*   **Space Complexity**: $O(N^2)$ to store the `board` and $O(N)$ for the recursion stack and boolean arrays.
+*   **Time Complexity**: $O(N!)$. While there are $N^N$ possible placements, the constraints significantly prune the search tree. The number of valid configurations is much smaller than $N!$.
+*   **Space Complexity**: $O(N^2)$ to store the `board`, plus $O(N)$ for the recursion stack and the boolean tracking arrays.
 
 ## 🎯 Why this pattern
-Backtracking is ideal here because we need to generate *all* valid permutations of queen placements. The boolean arrays act as a "look-up" table, transforming an $O(N)$ validation check into an $O(1)$ check, significantly pruning the search tree.
+Backtracking is ideal here because the problem requires finding *all* valid configurations. The state-space tree is naturally defined by the row-by-row placement, and the boolean arrays allow us to prune invalid branches immediately without iterating through the entire board to check for safety.
 
 ## 🧠 Pattern Recognition
-*   **Constraint Satisfaction**: Whenever you see "no two [items] can share the same [row/col/diagonal]", boolean tracking arrays are the standard optimization.
-*   **Exhaustive Search**: If the problem asks for *all* solutions, it is almost certainly a backtracking problem.
+*   **Constraint Satisfaction**: Whenever you see "no two [items] can share the same [row/col/diagonal]," boolean tracking arrays are the standard optimization.
+*   **Backtracking**: Use this when you need to explore all paths in a decision tree and "undo" a choice to explore the next branch.
 
 ## 📝 Important Takeaways
 > [!IMPORTANT]
-> * **State Reset**: Always reset the board and boolean arrays after the recursive call returns. This is the "back" in backtracking.
-> * **Diagonal Math**: Memorize `row - col + n - 1` and `row + col` as the standard way to identify diagonals in a grid.
-> * **Base Case**: The recursion terminates when `row == n`, signaling a successful board configuration.
+> *   **Coordinate Transformation**: Memorize `row - col + (n - 1)` and `row + col` for diagonal tracking.
+> *   **Backtracking Step**: Always reset the state (`board[r][c] = '.'` and `boolean = false`) immediately after the recursive call returns.
+> *   **Base Case**: The recursion terminates when `row == n`, indicating a successful placement of all $N$ queens.
 
 ## 🧩 Quick Cheat Sheet
 ```text
-      0 1 2 3 (col)
-    0 Q . . .
-    1 . . Q .
-    2 . . . Q
-    3 . Q . .
+      C0 C1 C2
+R0 | .  Q  . |  diag1: row - col + (n-1)
+R1 | .  .  . |  diag2: row + col
+R2 | .  .  . |
 ```
-*   `cols[c]` : `true` if column `c` is taken.
-*   `diag1[r - c + n - 1]` : `true` if major diagonal is taken.
-*   `diag2[r + c]` : `true` if minor diagonal is taken.
+```java
+// Check safety
+if (!cols[c] && !diag1[r - c + n - 1] && !diag2[r + c]) {
+    // Place queen
+    // Recurse
+    // Remove queen (Backtrack)
+}
+```
 
 ## 🏁 Final Summary
 > [!SUCCESS]
-> You have implemented an efficient N-Queens solver. By using boolean arrays to track constraints, you successfully reduced the validation overhead from $O(N)$ to $O(1)$, allowing the backtracking algorithm to explore the search space as efficiently as possible.
+> You have implemented an efficient N-Queens solver using backtracking and constant-time constraint lookups. By mapping diagonal indices to boolean arrays, you've optimized the safety check from $O(N)$ to $O(1)$, ensuring the algorithm performs optimally within the constraints of the search space.
 
 
 ## Problem

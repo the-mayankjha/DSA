@@ -1,21 +1,17 @@
-[d1] || diag2[d2]) {
-                continue;
-            }
+class Solution {
+    public List<List<String>> solveNQueens(int n) {
+        List<List<String>> ans = new ArrayList<>();
 
-            // Place queen
-            board[row][col] = 'Q';
-            cols[col] = true;
-            diag1[d1] = true;
-            diag2[d2] = true;
+        char[][] board = new char[n][n];
 
-            // Move to next row
-            backtrack(row + 1, n, board, cols, diag1, diag2, ans);
-
-            // Backtrack / remove queen
-            board[row][col] = '.';
-            cols[col] = false;
-            diag1[d1] = false;
-            diag2[d2] = false;
+        for (int i = 0; i < n; i++) {
+            Arrays.fill(board[i], '.');
         }
-    }
-}
+
+        boolean[] cols = new boolean[n];
+        boolean[] diag1 = new boolean[2 * n - 1]; // row - col + n - 1
+        boolean[] diag2 = new boolean[2 * n - 1]; // row + col
+
+        backtrack(0, n, board, cols, diag1, diag2, ans);
+
+        retur

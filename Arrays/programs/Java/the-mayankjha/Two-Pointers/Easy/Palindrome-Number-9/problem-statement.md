@@ -115,64 +115,80 @@ _See AI Notes below for the implementation-specific analysis._
 
 ## Approach
 
-The solution checks if an integer is a palindrome without converting it to a string. Instead of reversing the entire number—which risks integer overflow—it reverses only the **last half** of the digits. By comparing the first half of the number with the reversed second half, we can determine if the number reads the same forwards and backwards.
+The solution checks whether an integer `x` is a palindrome by reversing only the second half of the number mathematically, avoiding potential integer overflow that could occur if the entire number were reversed. 
+
+> [!TIP]
+> Reversing only half of the number is a powerful optimization that cuts the required mathematical operations in half and eliminates the need to handle full-reversal overflows.
 
 ## Key Idea / Invariant
 
-> [!NOTE]
-> Reversing the entire integer can cause arithmetic overflow if the reversed value exceeds `Integer.MAX_VALUE`. Reversing only half the number avoids this risk entirely.
-
-- Negative numbers can never be palindromes because of the leading minus sign.
-- Numbers that end with `0` (other than `0` itself) cannot be palindromes because a palindrome cannot start with `0`.
-- The `while` loop terminates when the original number `x` becomes less than or equal to `reversedHalf`, meaning we have processed half (or slightly more than half) of the digits.
+Negative numbers and numbers that end in `0` (except `0` itself) cannot be palindromes because a palindrome cannot start with `0`. For valid numbers, the algorithm extracts digits from the right side of `x` one by one using modulo arithmetic and accumulates them into `reversedHalf`. Once `reversedHalf` becomes greater than or equal to the remaining `x`, the halfway point is reached.
 
 ## Code Explanation
 
 The execution proceeds through the following steps:
 
-1. **Early Exit Validation**:
-   - The `if (x < 0 || (x % 10 == 0 && x != 0))` check immediately eliminates negative numbers and multiples of 10 (except `0` itself).
-2. **Variable Initialization**:
-   - `reversedHalf` is initialized to `0` to accumulate the reversed digits from the back of `x`.
-3. **Digit Reversal Loop**:
-   - The `while (x > reversedHalf)` loop runs as long as `x` is strictly greater than `reversedHalf`.
-   - Inside the loop, `int digit = x % 10` extracts the last digit of `x`.
-   - `reversedHalf = reversedHalf * 10 + digit` shifts the existing reversed digits to the left and appends the new `digit`.
-   - `x = x / 10` removes the last digit from `x`.
-4. **Length and Value Comparison**:
-   - For numbers with an **even** number of digits, `x` will exactly equal `reversedHalf` when the loop terminates.
-   - For numbers with an **odd** number of digits, the middle digit resides in `reversedHalf`, so we drop it using integer division (`reversedHalf / 10`) before comparing it to `x`.
+1. **Guard Clauses:**
+   ```java
+   if (x < 0 || (x % 10 == 0 && x != 0)) {
+       return false;
+   }
+   ```
+   The `if` statement immediately filters out negative numbers and multiples of 10 (like `10`, `20`, `100`), which can never read the same forwards and backwards.
+
+2. **Reversing the Right Half:**
+   ```java
+   int reversedHalf = 0;
+   while (x > reversedHalf) {
+       int digit = x % 10;
+       reversedHalf = reversedHalf * 10 + digit;
+       x = x / 10;
+   }
+   ```
+   Inside the `while` loop, `digit = x % 10` extracts the rightmost digit of `x`. This digit is appended to `reversedHalf` by multiplying the current `reversedHalf` by `10` and adding `digit`. Finally, `x = x / 10` strips the extracted digit from `x`. The loop terminates when `x` has shrunk to be less than or equal to `reversedHalf`.
+
+3. **Comparison:**
+   ```java
+   return x == reversedHalf || x == reversedHalf / 10;
+   ```
+   - For numbers with an **even** number of digits (e.g., `1221`), `x` and `reversedHalf` will be equal at the halfway point.
+   - For numbers with an **odd** number of digits (e.g., `12321`), the middle digit resides in `reversedHalf` but can be safely ignored by checking `x == reversedHalf / 10`.
 
 ## Dry Run
 
 Let's trace `x = 1221`:
 
-1. `x < 0` (`1221 < 0`) is false. `1221 % 10 == 0` is false. We proceed past the guard clause.
-2. `reversedHalf = 0`.
-3. **Iteration 1**:
-   - `x > reversedHalf` (`1221 > 0`) is true.
-   - `digit = 1221 % 10` $\rightarrow$ `1`.
-   - `reversedHalf = 0 * 10 + 1` $\rightarrow$ `1`.
-   - `x = 1221 / 10` $\rightarrow$ `122`.
-4. **Iteration 2**:
-   - `x > reversedHalf` (`122 > 1`) is true.
-   - `digit = 122 % 10` $\rightarrow$ `2`.
-   - `reversedHalf = 1 * 10 + 2` $\rightarrow$ `12`.
-   - `x = 12 / 10` $\rightarrow$ `12`.
-5. Loop terminates because `x > reversedHalf` (`12 > 12`) is now false.
-6. Return `x == reversedHalf || x == reversedHalf / 10` $\rightarrow$ `12 == 12` is true.
+| Iteration | Condition `x > reversedHalf` | `x` (before) | `digit = x % 10` | `reversedHalf` (after) | `x` (after) |
+| :---: | :---: | :---: | :---: | :---: | :---: |
+| **Start** | — | `1221` | — | `0` | `1221` |
+| **1** | `1221 > 0` (True) | `1221` | `1` | `1` | `122` |
+| **2** | `122 > 1` (True) | `122` | `2` | `12` | `12` |
+| **End** | `12 > 12` (False) | `12` | — | `12` | `12` |
+
+- **Final Check:** `x == reversedHalf` evaluates to `12 == 12`, which is `true`.
+
+Let's trace `x = 12321`:
+
+| Iteration | Condition `x > reversedHalf` | `x` (before) | `digit = x % 10` | `reversedHalf` (after) | `x` (after) |
+| :---: | :---: | :---: | :---: | :---: | :---: |
+| **Start** | — | `12321` | — | `0` | `12321` |
+| **1** | `12321 > 0` (True) | `12321` | `1` | `1` | `1232` |
+| **2** | `1232 > 1` (True) | `1232` | `2` | `12` | `123` |
+| **End** | `123 > 12` (False) | `123` | — | `12` | `123` |
+
+- **Final Check:** `x == reversedHalf / 10` evaluates to `123 == 12`, which simplifies to `12 == 12` (`true`).
 
 ## Complexity Analysis
 
-- **Time Complexity**: $\mathcal{O}(\log_{10}(n))$ where $n$ is the value of `x`. We divide `x` by $10$ in each iteration of the loop, meaning the runtime is proportional to the number of digits.
-- **Space Complexity**: $\mathcal{O}(1)$ because we only use a constant amount of extra memory (`reversedHalf` and `digit`) regardless of the size of `x`.
+- **Time Complexity:** $\mathcal{O}(\log_{10}(n))$ — The `while` loop divides `x` by `10` at each iteration, meaning the number of steps is proportional to the number of digits in `x`.
+- **Space Complexity:** $\mathcal{O}(1)$ — Only a few primitive integer variables (`reversedHalf`, `digit`) are used, consuming constant extra memory.
 
 ## Important Takeaways
 
-> [!TIP]
-> Always consider arithmetic overflow when dealing with reversals in numeric problems. Reversing only half the digits is a robust pattern that prevents overflow issues without needing larger data types like `long`.
+- Mathematical manipulation (`% 10` and `/ 10`) avoids converting integers to strings, saving both time and heap memory allocations.
+- Halving the reversal process prevents integer overflow issues that frequently plague full-number reversals in languages with fixed-width integers like Java.
 
 ## Final Summary
 
-This solution efficiently validates palindromes numerically by stripping and reversing only the trailing half of the digits. It runs in logarithmic time with constant extra space and cleanly handles edge cases such as negative numbers and trailing zeros without converting data types.
+This solution efficiently checks for palindromes by reversing only the trailing half of the integer using a `while` loop and modulo arithmetic. By handling even and odd digit lengths with a final logical check, it achieves optimal $\mathcal{O}(\log_{10} n)$ time and $\mathcal{O}(1)$ space complexity without requiring string conversions.
 

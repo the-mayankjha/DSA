@@ -16,8 +16,4 @@ class Solution {
             x = x / 10;
         }
 
-        // Even digits: x == reversedHalf
-        // Odd digits: x == reversedHalf / 10
-        return x == reversedHalf || x == reversedHalf / 10;
-    }
-}
+        // Even 

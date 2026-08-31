@@ -115,72 +115,57 @@ _See AI Notes below for the implementation-specific analysis._
 
 ## Approach
 
-The solution determines whether an integer `x` is a palindrome by reversing only the second half of the number mathematically, avoiding potential integer overflow that could occur if the entire number were reversed. 
-
-> [!TIP]
-> Reversing half the number instead of the full integer cuts the required arithmetic operations in half and prevents overflow issues inherent to large 32-bit signed integers.
+The solution determines if an integer is a palindrome by reversing only the second half of the number mathematically, avoiding the potential integer overflow issues that come with reversing the entire number. By processing digits from the right, the algorithm builds up `reversedHalf` until it meets or exceeds the remaining portion of `x`.
 
 ## Key Idea / Invariant
 
-Negative numbers and numbers that end with `0` (except `0` itself) cannot be palindromes. For all other numbers, we peel off digits from the right using modulo arithmetic (`% 10`) and accumulate them into `reversedHalf`. Once `reversedHalf` becomes greater than or equal to the remaining `x`, we have processed half the digits.
+> [!TIP]
+> Instead of converting the integer to a string or reversing all digits, we reverse the number in place digit by digit. When `reversedHalf` becomes greater than or equal to the remaining `x`, we have processed exactly half of the digits.
 
 ## Code Explanation
 
-The execution proceeds through the following steps:
+The execution order and core components of `isPalindrome` proceed as follows:
 
-1. **Edge Case Guard**: 
-   ```java
-   if (x < 0 || (x % 10 == 0 && x != 0)) {
-       return false;
-   }
-   ```
-   The condition immediately eliminates negative numbers and multiples of 10 (since no positive integer starts with `0`).
+1. **Edge Case Filtering:**
+   - The initial `if` statement checks if `x < 0` or if `x % 10 == 0 && x != 0`. 
+   - Negative numbers cannot be palindromes due to the leading minus sign.
+   - Numbers ending in `0` (other than `0` itself) cannot be palindromes because no integer starts with `0`.
 
-2. **Digit Reversal Loop**:
-   ```java
-   int reversedHalf = 0;
-   while (x > reversedHalf) {
-       int digit = x % 10;
-       reversedHalf = reversedHalf * 10 + digit;
-       x = x / 10;
-   }
-   ```
-   - `digit = x % 10` extracts the rightmost digit of `x`.
-   - `reversedHalf = reversedHalf * 10 + digit` shifts the current `reversedHalf` left by one decimal place and appends the new `digit`.
-   - `x = x / 10` removes the rightmost digit from `x`.
-   The loop terminates when the shrinking `x` becomes less than or equal to the growing `reversedHalf`.
+2. **Digit Reversal Loop:**
+   - We initialize `reversedHalf` to `0`.
+   - The `while (x > reversedHalf)` loop runs as long as the remaining part of `x` is strictly greater than the digits we have popped and reversed so far.
+   - Inside the loop, `int digit = x % 10` extracts the last digit of `x`.
+   - `reversedHalf = reversedHalf * 10 + digit` shifts the existing reversed digits left and appends the new `digit`.
+   - `x = x / 10` removes the last digit from `x`.
 
-3. **Comparison**:
-   ```java
-   return x == reversedHalf || x == reversedHalf / 10;
-   ```
-   - If `x` originally had an **even** number of digits, `x` and `reversedHalf` will be equal.
-   - If `x` originally had an **odd** number of digits, `reversedHalf / 10` drops the middle digit, allowing a direct comparison with `x`.
+3. **Palindrome Comparison:**
+   - After the loop terminates, we compare the halves. 
+   - For numbers with an even number of digits, `x` and `reversedHalf` will be equal (`x == reversedHalf`).
+   - For numbers with an odd number of digits, the middle digit resides in `reversedHalf`, so we drop it using integer division (`x == reversedHalf / 10`).
 
 ## Dry Run
 
 Let's trace `x = 1221`:
 
-| Step | Condition `x > reversedHalf` | `digit = x % 10` | `reversedHalf` computation | `x` after division |
+| Step | `x` | `reversedHalf` | `digit` = `x % 10` | Condition `x > reversedHalf` |
 | :--- | :--- | :--- | :--- | :--- |
-| Initial | `1221 > 0` (True) | - | `0` | `1221` |
-| 1 | `1221 > 0` (True) | `1` | `0 * 10 + 1 = 1` | `122` |
-| 2 | `122 > 1` (True) | `2` | `1 * 10 + 2 = 12` | `12` |
-| 3 | `12 > 12` (False) | - | Loop terminates | `12` |
+| Initial | `1221` | `0` | - | `1221 > 0` (True) |
+| 1 | `122` | `1` | `1` | `122 > 1` (True) |
+| 2 | `12` | `12` | `2` | `12 > 12` (False, loop ends) |
 
-Final check: `x == reversedHalf` evaluates to `12 == 12`, returning `true`.
+- **Final Check:** `x == reversedHalf` evaluates to `12 == 12`, which returns `true`.
 
 ## Complexity Analysis
 
-- **Time Complexity**: $\mathcal{O}(\log_{10}(n))$ where $n$ is the value of `x`. The while loop runs roughly $\log_{10}(n) / 2$ times because we only process half of the digits.
-- **Space Complexity**: $\mathcal{O}(1)$ as only a few primitive integer variables (`reversedHalf`, `digit`) are used.
+- **Time Complexity:** $O(\log_{10} n)$, where $n$ is the value of `x`. The while loop runs roughly $\frac{n}{2}$ times, dividing the number of digits by 2.
+- **Space Complexity:** $O(1)$. We only use a few primitive integer variables (`reversedHalf`, `digit`), requiring constant extra space regardless of the input size.
 
 ## Important Takeaways
 
-- **Overflow Prevention**: Reversing half a number is a robust pattern to avoid integer overflow problems on LeetCode.
-- **Math over Strings**: Solving this numerically avoids the $\mathcal{O}(n)$ extra space complexity required to convert the integer to a `String` or `char[]`.
+> [!IMPORTANT]
+> Reversing only half of the number is a powerful optimization that prevents arithmetic overflow that could occur if you attempted to reverse a 32-bit signed integer completely.
 
 ## Final Summary
 
-This solution uses mathematical digit extraction and half-reversal to efficiently check for palindromes in logarithmic time and constant space, successfully dodging both overflow pitfalls and extra memory allocations.
+This math-based Two Pointers-style digit manipulation approach efficiently validates palindromes without allocating extra memory for strings or arrays. By leveraging symmetry and stopping halfway through the number, it achieves optimal $O(\log n)$ time and $O(1)$ space complexity.
 
